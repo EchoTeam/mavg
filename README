@@ -1,0 +1,23 @@
+This module implements exponential moving average logic,
+a useful data structure to store hits/second averaged over some time period.
+
+For a general description see:
+http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+USAGE
+=====
+
+1. Create a moving average code with a given smoothing window.
+
+	M1 = jn_mavg:new_mavg(300).
+
+2. Update the moving average by accounting for new incoming events.
+
+	M2 = jn_mavg:bump_mavg(M1, 1).
+	M3 = jn_mavg:bump_mavg(M2, 1).
+
+3. Query moving average value.
+
+	EventsPerMinute = jn_mavg:getEventsPer(M3, 60).
+	EventsPerHour = jn_mavg:getEventsPer(M3, 3600).
+

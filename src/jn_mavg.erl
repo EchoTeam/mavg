@@ -1,3 +1,6 @@
+%%% Copyright (c) 2007, 2008, 2009 JackNyfe, Inc. <info@jacknyfe.net>.
+%%% See the accompanying LICENSE file.
+
 -module(jn_mavg).
 
 %%
@@ -76,10 +79,6 @@ new_mavg(SmoothingWindow, Events) when
 %% @spec bump_mavg(record(mavg), int()) -> record(mavg)
 %% @spec bump_mavg(record(mavg), int(), Unixtime) -> record(mavg)
 
-% Convert old version into new version
-bump_mavg(MA, Events) when tuple_size(MA) == 6 ->
-	bump_mavg(MA, Events);
-
 bump_mavg(MA, Events) -> bump_mavg(MA, Events, unixtime()).
 bump_mavg(MA, Events, T) when
 		is_record(MA, mavg),
@@ -108,12 +107,8 @@ bump_mavg(MA, Events, T) when
 			lastupdatets = T, eventCounter = UpdatedCounter }
     end.
 
-ecnt_upgrade(#ecnt{}=Ecnt, _P) -> Ecnt;
-ecnt_upgrade(Ecnt, 86400) when is_record(Ecnt, ecnt, 5) -> erlang:append_element(Ecnt, 10);
-ecnt_upgrade(Ecnt, _P) when is_record(Ecnt, ecnt, 5) -> erlang:append_element(Ecnt, 3).
-
 updateEventCounter(Events, EventsCounter, NowTS, Period) ->
-	EC = ecnt_upgrade(EventsCounter, Period),
+	EC = EventsCounter,
 	#ecnt{ counter = C, period_start = PeriodStart,
 		history_length = MaxHistLength } = EC,
 	% Make it look like local timestamp, useful for day-breaking.
@@ -169,10 +164,6 @@ updateEventHistory([], PeriodStart, Events, _) -> [{PeriodStart, Events}].
 % Get number of events per given number of time (extrapolated).
 %% @spec getEventsPer(record(mavg), int()) -> int()
 
-% Convert old version into new version
-getEventsPer(MA, SomePeriod) when tuple_size(MA) == 6 ->
-	getEventsPer(MA, SomePeriod);
-
 getEventsPer(MA, SomePeriod) when
 		is_record(MA, mavg),
 		is_integer(SomePeriod), SomePeriod > 0 ->
@@ -186,19 +177,15 @@ getEventsPer_nobump(#mavg{historicAvg = Average} = MA, SomePeriod) when
 		is_integer(SomePeriod), SomePeriod > 0 ->
 	round(Average * SomePeriod).
 
-getProperties(MA) when tuple_size(MA) == 6 ->
-	getProperties(MA);
 getProperties(MA) ->
 	#mavg{period = P, createts = C, lastupdatets = L} = MA,
 	{P,C,L}.
 
-history(MA) when tuple_size(MA) == 6 -> {0,[],0};
 history(MA) ->
 	MA_Updated = bump_mavg(MA, 0), % Make sure we're current
-	#ecnt{counter = C, history = H, archived_events = A} = ecnt_upgrade(MA_Updated#mavg.eventCounter, MA_Updated#mavg.period),
+	#ecnt{counter = C, history = H, archived_events = A} = MA_Updated#mavg.eventCounter,
 	{C, [B || {_A, B} <- H], A}.
 
-get_current(MA) when tuple_size(MA) == 6 -> get_current(MA);
 get_current(MA) when is_record(MA, mavg) ->
 	MA_Updated = bump_mavg(MA, 0),	% Make sure we're current
 	MA_Updated#mavg.historicAvg.

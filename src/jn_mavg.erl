@@ -19,8 +19,7 @@
 	get_current/1,
 	history/1,
 	new_mavg/1,
-	new_mavg/2,
-	selftest/0
+	new_mavg/2
 ]).
 
 % Time/Event moving average representation
@@ -197,7 +196,10 @@ unixtime() -> unixtime(now()).
 %% @spec unixtime(now()) -> integer()
 unixtime({Mega, Secs, _Msecs}) -> Mega * 1000000 + Secs.
 
-selftest() ->
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+jn_mavg_test() ->
 	io:format("~p Testing START ~n", [?MODULE]),
 	[] = updateEventHistory([], 1200, 0, 42),
 	[{1200, 13}] = updateEventHistory([], 1200, 13, 42),
@@ -261,3 +263,4 @@ selftest() ->
 
 	io:format("~p Testing STOP ~n", [?MODULE]).
 
+-endif.

@@ -58,12 +58,12 @@ new_mavg(SmoothingWindow, Options) when
 	Time = proplists:get_value(start_time, Options, unixtime()),
 	Events = proplists:get_value(start_events, Options, 0),
 	HLength = proplists:get_value(history_length, Options,
-			(#ecnt{})#ecnt.history_length),
+                                  (#ecnt{})#ecnt.history_length),
 	#mavg{period = SmoothingWindow, lastupdatets = Time, createts = Time,
-		eventCounter = updateEventCounter(Events,
-				#ecnt{history_length=HLength},
-				Time, SmoothingWindow),
-		unprocessedEvents = Events };
+          eventCounter = updateEventCounter(Events,
+                                            #ecnt{history_length=HLength},
+                                            Time, SmoothingWindow),
+          unprocessedEvents = Events };
 
 %% Old way of constructing moving average trackers.
 %% Create a new mavg record with a specified smoothing period.
@@ -72,7 +72,8 @@ new_mavg(SmoothingWindow, Options) when
 new_mavg(SmoothingWindow, Events) when
 		is_integer(SmoothingWindow), SmoothingWindow >= 10,
 		is_integer(Events), Events >= 0 ->
-	new_mavg(SmoothingWindow, [{start_events, Events}, {start_time, unixtime()}]).
+	new_mavg(SmoothingWindow, [{start_events, Events},
+                               {start_time, unixtime()}]).
 
 % Add some number of events into the time counter.
 %% @spec bump_mavg(record(mavg), int()) -> record(mavg)
@@ -80,30 +81,30 @@ new_mavg(SmoothingWindow, Events) when
 
 bump_mavg(MA, Events) -> bump_mavg(MA, Events, unixtime()).
 bump_mavg(MA, Events, T) when
-		is_record(MA, mavg),
-		is_integer(Events), Events >= 0,
-		is_integer(T) ->
+      is_record(MA, mavg),
+      is_integer(Events), Events >= 0,
+      is_integer(T) ->
     #mavg{ period = Period, lastupdatets = Updated,
-	unprocessedEvents = HoldEvs, historicAvg = Average,
-	eventCounter = Counter } = MA,
+           unprocessedEvents = HoldEvs, historicAvg = Average,
+           eventCounter = Counter } = MA,
     UpdatedCounter = updateEventCounter(Events, Counter, T, Period),
     Elapsed = T - Updated,
     if
 	% We lose precision if we incorporate each update
 	% into the pool right away, therefore we collect events
 	% and update them not earlier than once a second or so.
-	Elapsed =:= 0 -> MA#mavg{unprocessedEvents = HoldEvs + Events,
-			eventCounter = UpdatedCounter };
-	Elapsed < (8 * Period), Elapsed > 0 ->
+        Elapsed =:= 0 -> MA#mavg{unprocessedEvents = HoldEvs + Events,
+                                 eventCounter = UpdatedCounter };
+        Elapsed < (8 * Period), Elapsed > 0 ->
 		% Integrate HoldEvs, since they're for a single period
 		HoldAvg = (Average - HoldEvs) * math:exp(-1/Period) + HoldEvs,
 		% Integrate zero-filled periods, of which there are (Elapsed-1)
 		ZeroAvg = HoldAvg * math:exp((1-Elapsed)/Period),
 		MA#mavg{unprocessedEvents = Events, historicAvg = ZeroAvg,
-			lastupdatets = T, eventCounter = UpdatedCounter };
+                lastupdatets = T, eventCounter = UpdatedCounter };
 	true ->
 		MA#mavg{unprocessedEvents = Events, historicAvg = 0.0,
-			lastupdatets = T, eventCounter = UpdatedCounter }
+                lastupdatets = T, eventCounter = UpdatedCounter }
     end.
 
 updateEventCounter(Events, EventsCounter, NowTS, Period) ->
@@ -117,46 +118,52 @@ updateEventCounter(Events, EventsCounter, NowTS, Period) ->
 	if
 		CurrentPeriod == PeriodStart -> EC#ecnt{counter = Events + C};
 		PeriodStart == 0 -> EC#ecnt{counter = Events + C,
-				period_start = CurrentPeriod };
+                                    period_start = CurrentPeriod };
 		true ->
+            UpdatedHistory = updateEventHistory(EC#ecnt.history,
+                                                PeriodStart, C, MaxHistLength),
+            PaddedHistory = padHistoryUntil(CurrentPeriod - 1, UpdatedHistory,
+                                            MaxHistLength),
 			EC#ecnt{counter = Events,
-				period_start = CurrentPeriod,
-				archived_events = EC#ecnt.archived_events + C,
-				history = padHistoryUntil(CurrentPeriod - 1,
-					updateEventHistory(EC#ecnt.history,
-					PeriodStart, C, MaxHistLength),
-					MaxHistLength) }
+                    period_start = CurrentPeriod,
+                    archived_events = EC#ecnt.archived_events + C,
+                    history = PaddedHistory }
 	end.
 
 padHistoryUntil(LastPeriod, [{Period,_}|_] = History, MaxHistLen) ->
 	Skipped = LastPeriod - Period,
 	if
-	  Skipped =< 0 ->
-		History;
-	  true ->
-		SkippedEntries = [ {PTS, 0} || PTS <- lists:seq(LastPeriod,
-			lists:max([Period + 1, LastPeriod - MaxHistLen]), -1)],
-		lists:sublist(SkippedEntries ++ History, MaxHistLen)
+        Skipped =< 0 ->
+            History;
+        true ->
+            PTSes = lists:seq(LastPeriod,
+                              lists:max([Period + 1, LastPeriod - MaxHistLen]),
+                              -1),
+            SkippedEntries = [{PTS, 0} || PTS <- PTSes],
+            lists:sublist(SkippedEntries ++ History, MaxHistLen)
 	end;
 padHistoryUntil(_LastPeriod, [], _MaxHistLen) -> [].
 
 updateEventHistory([{OldPeriodStart,_}|_] = PrevHistory, PeriodStart, Events,
-	MaxHistLen) when PeriodStart - OldPeriodStart == 1 ->
+                   MaxHistLen) when PeriodStart - OldPeriodStart == 1 ->
 	lists:sublist([{PeriodStart,Events} | PrevHistory], MaxHistLen);
 updateEventHistory([{OldPeriodStart,_}|_] = PrevHistory, PeriodStart, Events,
-	MaxHistLen) ->
+                   MaxHistLen) ->
 	Skipped = PeriodStart - OldPeriodStart - 1,
 	EntriesForSkippedPeriod = if
-		Skipped =< 0 -> [];
-		true -> [ {PTS, 0} || PTS <- lists:seq(
-					PeriodStart - 1,
-					lists:max([OldPeriodStart+ 1,
-						PeriodStart - MaxHistLen]),
-					-1) ]
-	end,
+                                  Skipped =< 0 -> [];
+                                  true ->
+                                      PeriodEnd =lists:max([OldPeriodStart + 1,
+                                                            PeriodStart -
+                                                                MaxHistLen]),
+                                      PTSes = lists:seq(PeriodStart - 1,
+                                                        PeriodEnd,
+                                                        -1),
+                                      [{PTS, 0} || PTS <- PTSes ]
+                              end,
 	lists:sublist(
-		[{PeriodStart,Events} | EntriesForSkippedPeriod] ++ PrevHistory,
-		MaxHistLen);
+      [{PeriodStart,Events} | EntriesForSkippedPeriod] ++ PrevHistory,
+      MaxHistLen);
 updateEventHistory([], _, 0, _) -> [];
 updateEventHistory([], PeriodStart, Events, _) -> [{PeriodStart, Events}].
 
@@ -164,16 +171,16 @@ updateEventHistory([], PeriodStart, Events, _) -> [{PeriodStart, Events}].
 %% @spec getEventsPer(record(mavg), int()) -> int()
 
 getEventsPer(MA, SomePeriod) when
-		is_record(MA, mavg),
-		is_integer(SomePeriod), SomePeriod > 0 ->
+      is_record(MA, mavg),
+      is_integer(SomePeriod), SomePeriod > 0 ->
 	MA_Updated = bump_mavg(MA, 0),	% Make sure we're current
 	#mavg{ historicAvg = Average } = MA_Updated,
 	EventsPerPeriod = Average,
 	round(EventsPerPeriod * SomePeriod).
 
 getEventsPer_nobump(#mavg{historicAvg = Average} = MA, SomePeriod) when
-		is_record(MA, mavg),
-		is_integer(SomePeriod), SomePeriod > 0 ->
+      is_record(MA, mavg),
+      is_integer(SomePeriod), SomePeriod > 0 ->
 	round(Average * SomePeriod).
 
 getProperties(MA) ->

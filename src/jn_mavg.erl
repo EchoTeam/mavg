@@ -182,7 +182,8 @@ getProperties(MA) ->
 
 history(MA) ->
 	MA_Updated = bump_mavg(MA, 0), % Make sure we're current
-	#ecnt{counter = C, history = H, archived_events = A} = MA_Updated#mavg.eventCounter,
+	#ecnt{counter = C, history = H,
+          archived_events = A} = MA_Updated#mavg.eventCounter,
 	{C, [B || {_A, B} <- H], A}.
 
 get_current(MA) when is_record(MA, mavg) ->
@@ -204,7 +205,8 @@ jn_mavg_test() ->
 	[] = updateEventHistory([], 1200, 0, 42),
 	[{1200, 13}] = updateEventHistory([], 1200, 13, 42),
 	[{1201, 13},{1200, 5}] = updateEventHistory([{1200, 5}], 1201, 13, 42),
-	[{1201, 13},{1200, 5},foo] = updateEventHistory([{1200, 5},foo], 1201, 13, 42),
+	[{1201, 13},{1200, 5},foo] = updateEventHistory([{1200, 5},foo],
+                                                    1201, 13, 42),
 	[{1200, 1}] = padHistoryUntil(1200, [{1200, 1}], 42),
 	[{1201, 0},{1200, 1}] = padHistoryUntil(1201, [{1200, 1}], 42),
 	[{1202, 0},{1201,0},{1200, 1}] = padHistoryUntil(1202, [{1200, 1}], 42),
@@ -244,19 +246,23 @@ jn_mavg_test() ->
 	#mavg{eventCounter = #ecnt{counter = 1, archived_events = 3}} = MA8,
 
 	% History testing
-	HMa1 = new_mavg(60, [{start_time, unixtime() - 1000}, {start_events, 1}, {history_length, 0}]),
+	HMa1 = new_mavg(60, [{start_time, unixtime() - 1000},
+                         {start_events, 1}, {history_length, 0}]),
 	{_, H1, _} = history(HMa1),
 	0 = length(H1),
 
-	HMa2 = new_mavg(60, [{start_time, unixtime() - 1000}, {start_events, 1}, {history_length, 2}]),
+	HMa2 = new_mavg(60, [{start_time, unixtime() - 1000},
+                         {start_events, 1}, {history_length, 2}]),
 	{_, H2, _} = history(HMa2),
 	2 = length(H2),
 
-	HMa10 = new_mavg(60, [{start_time, unixtime() - 1000}, {start_events, 1}, {history_length, 10}]),
+	HMa10 = new_mavg(60, [{start_time, unixtime() - 1000},
+                          {start_events, 1}, {history_length, 10}]),
 	{_, H10, _} = history(HMa10),
 	10 = length(H10),
 
-	HMa20 = new_mavg(60, [{start_time, unixtime() - 1200}, {start_events, 1}, {history_length, 20}]),
+	HMa20 = new_mavg(60, [{start_time, unixtime() - 1200},
+                          {start_events, 1}, {history_length, 20}]),
 	{_, H20, _} = history(HMa20),
 	[1|_] = lists:reverse(H20),
 	20 = length(H20),

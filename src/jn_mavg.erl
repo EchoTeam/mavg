@@ -49,7 +49,7 @@ new_mavg(SmoothingWindow) -> new_mavg(SmoothingWindow, []).
 
 %% New way of constructing moving average trackers.
 %% @spec new_mavg(SmoothingWindow, [Option]) -> record(mavg)
-%% Type		Option = 
+%% Type		Option =
 %%			  {start_time, int()}
 %%			| {start_events, int()}
 %%			| {history_length, int()}

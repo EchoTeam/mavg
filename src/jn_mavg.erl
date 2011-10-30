@@ -96,15 +96,15 @@ bump_mavg(MA, Events, T) when
         Elapsed =:= 0 -> MA#mavg{unprocessedEvents = HoldEvs + Events,
                                  eventCounter = UpdatedCounter };
         Elapsed < (8 * Period), Elapsed > 0 ->
-		% Integrate HoldEvs, since they're for a single period
-		HoldAvg = (Average - HoldEvs) * math:exp(-1/Period) + HoldEvs,
-		% Integrate zero-filled periods, of which there are (Elapsed-1)
-		ZeroAvg = HoldAvg * math:exp((1-Elapsed)/Period),
-		MA#mavg{unprocessedEvents = Events, historicAvg = ZeroAvg,
-                lastupdatets = T, eventCounter = UpdatedCounter };
-	true ->
-		MA#mavg{unprocessedEvents = Events, historicAvg = 0.0,
-                lastupdatets = T, eventCounter = UpdatedCounter }
+            %% Integrate HoldEvs, since they're for a single period
+            HoldAvg = (Average - HoldEvs) * math:exp(-1/Period) + HoldEvs,
+            %% Integrate zero-filled periods, of which there are (Elapsed-1)
+            ZeroAvg = HoldAvg * math:exp((1-Elapsed)/Period),
+            MA#mavg{unprocessedEvents = Events, historicAvg = ZeroAvg,
+                    lastupdatets = T, eventCounter = UpdatedCounter };
+        true ->
+            MA#mavg{unprocessedEvents = Events, historicAvg = 0.0,
+                    lastupdatets = T, eventCounter = UpdatedCounter }
     end.
 
 updateEventCounter(Events, EventsCounter, NowTS, Period) ->

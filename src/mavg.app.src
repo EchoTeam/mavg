@@ -2,6 +2,8 @@
  [{description, "Exponential moving average library"},
   {vsn, "1.0"},
   {modules, [jn_mavg]},
-  {mod, {mavg,[]}},
-  {start_phases, []}
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]}
  ]}.
